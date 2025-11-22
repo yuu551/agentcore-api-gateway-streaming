@@ -6,36 +6,27 @@ Amazon Bedrock AgentCore RuntimeをAPI Gateway Response Streamingでラップし
 
 このプロジェクトは、以下の技術を組み合わせています：
 
-- **Amazon Bedrock AgentCore**: AIエージェントをデプロイ・実行
-- **AWS Lambda**: Response Streamingを使ってAgentCore Runtimeをプロキシ
-- **Amazon API Gateway**: Response Streamingを使ってクライアントにストリーミングレスポンスを返却
-- **AWS CDK**: インフラをコードで管理
+- Amazon Bedrock AgentCore: AIエージェントをデプロイ・実行
+- AWS Lambda: Response Streamingを使ってAgentCore Runtimeをプロキシ
+- Amazon API Gateway: Response Streamingを使ってクライアントにストリーミングレスポンスを返却
+- AWS CDK: インフラをコードで管理
 
 ## アーキテクチャ
 
-```
-クライアント
-   ↓ (POST リクエスト)
-API Gateway (Response Streaming有効)
-   ↓ (Lambda Proxy統合)
-Lambda関数 (Response Streaming対応)
-   ↓ (InvokeAgentRuntime API)
-AgentCore Runtime
-   ↓ (ストリームレスポンス)
-Lambda関数
-   ↓ (SSE形式でストリーム)
-API Gateway
-   ↓ (そのままストリーミング)
-クライアント
-```
+```mermaid
+sequenceDiagram
+    participant Client as クライアント
+    participant APIGW as API Gateway<br/>(Response Streaming有効)
+    participant Lambda as Lambda関数<br/>(Response Streaming対応)
+    participant AgentCore as AgentCore Runtime
 
-## 前提条件
-
-- AWS CLI設定済み
-- Node.js v20.x以降
-- AWS CDK
-- Python 3.13
-- uvパッケージマネージャー
+    Client->>APIGW: POST リクエスト
+    APIGW->>Lambda: Lambda Proxy統合
+    Lambda->>AgentCore: InvokeAgentRuntime API
+    AgentCore-->>Lambda: ストリームレスポンス
+    Lambda-->>APIGW: SSE形式でストリーム
+    APIGW-->>Client: そのままストリーミング
+```
 
 ## プロジェクト構成
 
@@ -66,23 +57,12 @@ API Gateway
 
 ```bash
 # CDKの依存関係
-cd cdk
 npm install
-
-# Lambda関数の依存関係
-cd lambda/agentcore-proxy
-npm install
-cd ../..
-
-# Pythonの依存関係（AgentCore用）
-cd ..
-uv sync
 ```
 
 ### 2. CDKでデプロイ
 
 ```bash
-cd cdk
 cdk bootstrap  # 初回のみ
 cdk deploy
 ```
@@ -183,54 +163,3 @@ const asyncPipeline = promisify(streamPipeline);
 
 await asyncPipeline(runtimeResponse.response as Readable, httpStream);
 ```
-
-## トラブルシューティング
-
-### ストリーミングされない
-
-**原因**: API Gatewayのレスポンス転送モードが`STREAM`になっていない
-
-**解決策**: メソッド設定で「レスポンス転送モード」を「ストリーム」に設定
-
-### タイムアウトエラー
-
-**原因**: LambdaまたはAPI Gatewayのタイムアウトが短い
-
-**解決策**: 両方とも900秒（15分）に設定
-
-### AccessDeniedException
-
-**原因**: LambdaのIAMロールにAgentCore Runtime呼び出し権限がない
-
-**解決策**: CDKで自動的に付与されるはずですが、手動の場合は以下の権限を追加：
-
-```json
-{
-  "Effect": "Allow",
-  "Action": "bedrock-agentcore:InvokeAgentRuntime",
-  "Resource": [
-    "arn:aws:bedrock-agentcore:*:*:runtime/*",
-    "arn:aws:bedrock-agentcore:*:*:runtime/*/runtime-endpoint/*"
-  ]
-}
-```
-
-## 制限事項
-
-- Lambda最大実行時間: 15分
-- AgentCore Runtime最大接続時間: 60分
-- API Gatewayストリーム最大時間: 15分
-- 初回6MB: 無制限帯域
-- 6MB以降: 2MBps制限
-- API Gatewayキャッシング: ストリーミング時は使用不可
-- レスポンス変換（VTL）: ストリーミング時は使用不可
-
-## 参考リンク
-
-- [API Gateway Response Streaming](https://docs.aws.amazon.com/apigateway/latest/developerguide/response-transfer-mode.html)
-- [Lambda Response Streaming](https://docs.aws.amazon.com/lambda/latest/dg/configuration-response-streaming.html)
-- [Building responsive APIs with Amazon API Gateway response streaming](https://aws.amazon.com/blogs/compute/building-responsive-apis-with-amazon-api-gateway-response-streaming/)
-
-## ライセンス
-
-MIT
