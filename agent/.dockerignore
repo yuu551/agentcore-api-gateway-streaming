@@ -1,0 +1,18 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist
+build
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+
+# Misc
+.DS_Store

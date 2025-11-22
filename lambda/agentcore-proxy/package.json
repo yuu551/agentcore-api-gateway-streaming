@@ -1,0 +1,26 @@
+{
+  "name": "agentcore-proxy",
+  "version": "1.0.0",
+  "description": "Lambda function to proxy AgentCore Runtime with streaming response",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "package": "npm run build && zip -r deployment.zip index.js node_modules"
+  },
+  "keywords": [
+    "lambda",
+    "agentcore",
+    "streaming",
+    "bedrock"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agentcore": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}
