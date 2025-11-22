@@ -17,7 +17,7 @@ if (!agentCoreArn) {
 const asyncPipeline = promisify(streamPipeline);
 
 // BedrockAgentCoreクライアントの初期化
-const bedrockClient = new BedrockAgentCoreClient({
+const agentCoreClient = new BedrockAgentCoreClient({
   region: process.env.AWS_REGION || "us-west-2",
 });
 
@@ -91,7 +91,7 @@ export const handler = awslambda.streamifyResponse(
       console.log("Calling AgentCore Runtime...");
 
       // AgentCoreを実行してレスポンスを取得
-      const runtimeResponse = await bedrockClient.send(invokeCommand);
+      const runtimeResponse = await agentCoreClient.send(invokeCommand);
 
       console.log("Received response, initiating stream transfer...");
 
